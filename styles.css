@@ -17,6 +17,7 @@
   --box-e: #ba68c8;
   --box-f: #7986cb;
   --box-g: #f06292;
+  --box-main: #a1887f;
 }
 
 * { box-sizing: border-box; }
@@ -362,6 +363,7 @@ main {
 .card.box-E { border-left-color: var(--box-e); }
 .card.box-F { border-left-color: var(--box-f); }
 .card.box-G { border-left-color: var(--box-g); }
+.card.box-MAIN { border-left-color: var(--box-main); }
 
 /* Key view */
 .key-card {

@@ -9,6 +9,7 @@ const BOXES = [
   { id: "D", label: "Box D", side: "east" },
   { id: "X", label: "Box X", side: "east" },
   { id: "E", label: "Box E", side: "west" },
+  { id: "MAIN", label: "Main", side: "west" },
   { id: "F", label: "Box F", side: "west" }, // L-corner
   { id: "G", label: "Box G", side: "west" },
 ];
@@ -26,6 +27,7 @@ const DOORS = [
   { id: "D-W",  box: "D", facing: "W" },
   { id: "E-E",  box: "E", facing: "E" },
   { id: "E-S",  box: "E", facing: "S" },
+  { id: "MAIN-E", box: "MAIN", facing: "E" },
   { id: "F-E1", box: "F", facing: "E" }, // northern east door of F
   { id: "F-E2", box: "F", facing: "E" }, // southern east door of F
   { id: "F-S",  box: "F", facing: "S" },
@@ -51,6 +53,8 @@ const KEY_ASSIGNMENTS = {
   "E-E-b":  null,
   "E-S-a":  null,
   "E-S-b":  null,
+  "MAIN-E-a": null,
+  "MAIN-E-b": null,
   "F-E1-a": null,
   "F-E1-b": null,
   "F-E2-a": null,

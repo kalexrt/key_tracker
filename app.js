@@ -62,6 +62,7 @@ const MAP_BOXES = {
   X: { x: 310, y: 340, w: 150, h:  60 },
   D: { x: 310, y: 410, w: 150, h:  70 },
   E: { x: 100, y: 140, w: 130, h:  35 },
+  MAIN: { x: 100, y: 180, w: 130, h: 35 },
   F: { x: 100, y: 220, w: 130, h: 130 }, // corner, opposite C with corridor gap
   G: { x:   0, y: 220, w: 100, h: 130 }, // east wall (x=100) meets F's west wall
 };
@@ -79,6 +80,7 @@ const DOOR_PLACEMENT = {
   "X-W":  { box: "X", side: "w", t: 0.50 },
   "E-E":  { box: "E", side: "e", t: 0.50 },
   "E-S":  { box: "E", side: "s", t: 0.70 },
+  "MAIN-E": { box: "MAIN", side: "e", t: 0.50 },
   "F-E1": { box: "F", side: "e", t: 0.25 },
   "F-E2": { box: "F", side: "e", t: 0.70 },
   "F-S":  { box: "F", side: "s", t: 0.30 },
