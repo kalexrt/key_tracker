@@ -234,6 +234,9 @@ main {
   dominant-baseline: middle;
   pointer-events: none;
 }
+.box-label.long {
+  font-size: 12px;
+}
 .door-rect {
   cursor: pointer;
   stroke: #000;

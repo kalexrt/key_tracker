@@ -14,6 +14,21 @@ const BOXES = [
   { id: "G", label: "Box G", side: "west" },
 ];
 
+// Display-name overrides for boxes (visual only).
+// Set a value to rename how a box appears on the map and in cards.
+// null => falls back to the box id (A, B, MAIN, etc.)
+const BOX_NAMES = {
+  A:    null,
+  B:    null,
+  C:    null,
+  D:    null,
+  X:    null,
+  E:    null,
+  MAIN: null,
+  F:    null,
+  G:    null,
+};
+
 // 12 doors. IDs use facing direction; for boxes with multiple doors on the
 // same facing, suffix 1 = northern, 2 = southern.
 // Each door has 2 keyholes labeled "a" (upper/left) and "b" (lower/right).

@@ -5,6 +5,11 @@
 const doorsById = Object.fromEntries(DOORS.map(d => [d.id, d]));
 const boxesById = Object.fromEntries(BOXES.map(b => [b.id, b]));
 
+function boxDisplayName(boxId) {
+  const v = (typeof BOX_NAMES !== "undefined") ? BOX_NAMES[boxId] : null;
+  return (v === null || v === undefined || v === "") ? boxId : String(v);
+}
+
 // keyholeId -> "a" | "b"
 function holeSuffix(keyholeId) {
   return keyholeId.endsWith("-a") ? "a" : "b";
@@ -121,11 +126,12 @@ function renderMap() {
       x: b.x, y: b.y, width: b.w, height: b.h,
       rx: 6, ry: 6,
     }));
+    const name = boxDisplayName(id);
     svg.appendChild(svgEl("text", {
-      class: "box-label",
+      class: name.length > 3 ? "box-label long" : "box-label",
       x: b.x + b.w / 2,
       y: b.y + b.h / 2,
-    }, id));
+    }, name));
   }
 
   // Doors
@@ -271,14 +277,13 @@ function renderDoors() {
   list.innerHTML = "";
 
   for (const door of DOORS) {
-    const box = boxesById[door.box];
     const facingName = { N: "North", S: "South", E: "East", W: "West" }[door.facing];
 
     const card = document.createElement("article");
     card.className = `card box-${door.box}`;
     card.dataset.doorCard = door.id;
     card.dataset.search =
-      `${door.id} ${door.box} box${door.box} ${facingName} ${KEY_ASSIGNMENTS[`${door.id}-a`] ?? ""} ${KEY_ASSIGNMENTS[`${door.id}-b`] ?? ""}`
+      `${door.id} ${door.box} ${boxDisplayName(door.box)} box${door.box} ${facingName} ${KEY_ASSIGNMENTS[`${door.id}-a`] ?? ""} ${KEY_ASSIGNMENTS[`${door.id}-b`] ?? ""}`
       .toLowerCase().replace(/\s+/g, " ");
 
     const aVal = KEY_ASSIGNMENTS[`${door.id}-a`];
@@ -289,7 +294,7 @@ function renderDoors() {
     card.innerHTML = `
       <div class="card-header">
         <h2 class="card-title">${door.id}</h2>
-        <span class="card-sub">${box.label} · faces ${facingName}</span>
+        <span class="card-sub">${boxDisplayName(door.box)} · faces ${facingName}</span>
       </div>
       <div class="keyhole-row">
         <span class="keyhole-label">Hole a</span>
