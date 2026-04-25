@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#1a1a1a" />
   <title>Key Tracker</title>
   <link rel="stylesheet" href="styles.css" />
@@ -28,17 +28,24 @@
   <main>
     <section id="view-map" class="view active">
       <div class="map-wrap">
-        <div class="compass" aria-hidden="true">
-          <span class="n">N</span>
-          <span class="arrow">↑</span>
+        <div class="map-viewport" id="map-viewport">
+          <div class="compass" aria-hidden="true">
+            <span class="n">N</span>
+            <span class="arrow">↑</span>
+          </div>
+          <svg
+            id="map-svg"
+            viewBox="0 0 480 600"
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            aria-label="Building map"
+          ></svg>
+          <div class="zoom-controls" aria-label="Map zoom">
+            <button type="button" class="zoom-btn" data-zoom="in" aria-label="Zoom in">+</button>
+            <button type="button" class="zoom-btn" data-zoom="out" aria-label="Zoom out">−</button>
+            <button type="button" class="zoom-btn" data-zoom="reset" aria-label="Reset zoom">⤾</button>
+          </div>
         </div>
-        <svg
-          id="map-svg"
-          viewBox="0 0 400 600"
-          preserveAspectRatio="xMidYMid meet"
-          role="img"
-          aria-label="Building map"
-        ></svg>
         <div class="legend" aria-hidden="true">
           <span class="dot dot-full"></span> Both keys assigned
           <span class="dot dot-partial"></span> Partial

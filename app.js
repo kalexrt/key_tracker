@@ -56,14 +56,14 @@ function doorStatus(doorId) {
 
 const MAP_BOXES = {
   // x, y, w, h
-  A: { x: 230, y:  20, w: 150, h: 110 },
-  B: { x: 230, y: 140, w: 150, h:  70 },
-  C: { x: 230, y: 220, w: 150, h: 110 },
-  X: { x: 230, y: 340, w: 150, h:  60 },
-  D: { x: 230, y: 410, w: 150, h:  70 },
-  E: { x:  20, y: 140, w: 130, h:  35 },
-  F: { x:  20, y: 220, w: 130, h: 130 }, // corner, opposite C with corridor gap
-  G: { x: -80, y: 220, w: 100, h: 130 }, // east wall (x=85) meets F's west wall
+  A: { x: 310, y:  20, w: 150, h: 110 },
+  B: { x: 310, y: 140, w: 150, h:  70 },
+  C: { x: 310, y: 220, w: 150, h: 110 },
+  X: { x: 310, y: 340, w: 150, h:  60 },
+  D: { x: 310, y: 410, w: 150, h:  70 },
+  E: { x: 100, y: 140, w: 130, h:  35 },
+  F: { x: 100, y: 220, w: 130, h: 130 }, // corner, opposite C with corridor gap
+  G: { x:   0, y: 220, w: 100, h: 130 }, // east wall (x=100) meets F's west wall
 };
 
 // For each door: which box, which side (n/s/e/w), and a fractional position
@@ -97,6 +97,10 @@ function svgEl(name, attrs = {}, text) {
   return el;
 }
 
+function isHitHorizontal(side) {
+  return side === "n" || side === "s";
+}
+
 function renderMap() {
   const svg = document.getElementById("map-svg");
   svg.innerHTML = "";
@@ -104,7 +108,7 @@ function renderMap() {
   // Dashed outline showing the L-shaped corridor between west boxes (F is the corner)
   const corridor = svgEl("path", {
     class: "corridor",
-    d: "M 222 140 L 222 360 L 85 360 L 85 250",
+    d: "M 302 140 L 302 360 L 165 360 L 165 250",
   });
   svg.appendChild(corridor);
 
@@ -147,6 +151,24 @@ function renderMap() {
     }
 
     const status = doorStatus(door.id);
+
+    // Larger transparent tap-target underneath door rect (so keyholes stay on top)
+    const padX = isHitHorizontal(place.side) ? 12 : 8;
+    const padY = isHitHorizontal(place.side) ? 8 : 12;
+    const hit = svgEl("rect", {
+      class: "door-hit",
+      "data-door-id": door.id,
+      x: x - padX, y: y - padY,
+      width: w + padX * 2, height: h + padY * 2,
+      fill: "transparent",
+      "pointer-events": "all",
+    });
+    hit.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      onDoorClick(door.id);
+    });
+    svg.appendChild(hit);
+
     const rect = svgEl("rect", {
       class: `door-rect ${status}`,
       "data-door-id": door.id,
@@ -390,11 +412,241 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// ---------- Map zoom & pan ----------
+const VB_BASE = { x: 0, y: 0, w: 480, h: 600 };
+const VB = { ...VB_BASE };
+const MIN_SCALE = 1;
+const MAX_SCALE = 6;
+
+function applyViewBox() {
+  const svg = document.getElementById("map-svg");
+  if (svg) svg.setAttribute("viewBox", `${VB.x} ${VB.y} ${VB.w} ${VB.h}`);
+}
+
+function currentScale() {
+  return VB_BASE.w / VB.w;
+}
+
+function clampViewBox() {
+  // Clamp scale via width
+  const minW = VB_BASE.w / MAX_SCALE;
+  const maxW = VB_BASE.w / MIN_SCALE;
+  if (VB.w < minW) {
+    const ratio = minW / VB.w;
+    VB.w *= ratio; VB.h *= ratio;
+  }
+  if (VB.w > maxW) {
+    VB.w = VB_BASE.w; VB.h = VB_BASE.h;
+  }
+  // Clamp pan: don't allow viewBox to drift more than its own size away from base
+  const maxX = VB_BASE.x + VB_BASE.w - VB.w * 0.1;
+  const minX = VB_BASE.x - VB.w * 0.9;
+  const maxY = VB_BASE.y + VB_BASE.h - VB.h * 0.1;
+  const minY = VB_BASE.y - VB.h * 0.9;
+  // When fully zoomed out, center exactly
+  if (currentScale() <= 1.001) {
+    VB.x = VB_BASE.x; VB.y = VB_BASE.y;
+  } else {
+    if (VB.x < minX) VB.x = minX;
+    if (VB.x > maxX) VB.x = maxX;
+    if (VB.y < minY) VB.y = minY;
+    if (VB.y > maxY) VB.y = maxY;
+  }
+}
+
+function clientToSvg(clientX, clientY) {
+  const svg = document.getElementById("map-svg");
+  const rect = svg.getBoundingClientRect();
+  // SVG uses preserveAspectRatio xMidYMid meet — compute the rendered viewBox area
+  const scale = Math.min(rect.width / VB.w, rect.height / VB.h);
+  const renderedW = VB.w * scale;
+  const renderedH = VB.h * scale;
+  const offsetX = (rect.width - renderedW) / 2;
+  const offsetY = (rect.height - renderedH) / 2;
+  const sx = (clientX - rect.left - offsetX) / scale + VB.x;
+  const sy = (clientY - rect.top - offsetY) / scale + VB.y;
+  return { x: sx, y: sy, scale };
+}
+
+function zoomAt(svgX, svgY, factor) {
+  // Keep (svgX, svgY) at the same screen position after scaling
+  const newW = VB.w / factor;
+  const newH = VB.h / factor;
+  // svgX = VB.x + tx * VB.w  =>  tx = (svgX - VB.x) / VB.w
+  const tx = (svgX - VB.x) / VB.w;
+  const ty = (svgY - VB.y) / VB.h;
+  VB.x = svgX - tx * newW;
+  VB.y = svgY - ty * newH;
+  VB.w = newW;
+  VB.h = newH;
+  clampViewBox();
+  applyViewBox();
+}
+
+function resetZoom() {
+  VB.x = VB_BASE.x; VB.y = VB_BASE.y;
+  VB.w = VB_BASE.w; VB.h = VB_BASE.h;
+  applyViewBox();
+}
+
+function setupMapInteractions() {
+  const viewport = document.getElementById("map-viewport");
+  const svg = document.getElementById("map-svg");
+  if (!viewport || !svg) return;
+
+  const pointers = new Map(); // pointerId -> { x, y }
+  let dragStartedAt = 0;
+  let totalMove = 0;
+  let lastPan = null;
+  let pinchPrevDist = 0;
+  let pinchPrevMid = null;
+  let suppressClickUntil = 0;
+  let lastTapTime = 0;
+  let lastTapPos = null;
+
+  function pointersArr() { return Array.from(pointers.values()); }
+
+  viewport.addEventListener("pointerdown", (ev) => {
+    viewport.setPointerCapture(ev.pointerId);
+    pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    dragStartedAt = performance.now();
+    totalMove = 0;
+    if (pointers.size === 1) {
+      lastPan = { x: ev.clientX, y: ev.clientY };
+      svg.classList.add("panning");
+    } else if (pointers.size === 2) {
+      const [p1, p2] = pointersArr();
+      pinchPrevDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      pinchPrevMid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+      lastPan = null;
+    }
+  });
+
+  viewport.addEventListener("pointermove", (ev) => {
+    if (!pointers.has(ev.pointerId)) return;
+    const prev = pointers.get(ev.pointerId);
+    const dx = ev.clientX - prev.x;
+    const dy = ev.clientY - prev.y;
+    totalMove += Math.abs(dx) + Math.abs(dy);
+    pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+
+    if (pointers.size === 1 && lastPan) {
+      const rect = svg.getBoundingClientRect();
+      const scale = Math.min(rect.width / VB.w, rect.height / VB.h);
+      VB.x -= dx / scale;
+      VB.y -= dy / scale;
+      clampViewBox();
+      applyViewBox();
+      lastPan = { x: ev.clientX, y: ev.clientY };
+    } else if (pointers.size === 2) {
+      const [p1, p2] = pointersArr();
+      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+      if (pinchPrevDist > 0) {
+        const factor = dist / pinchPrevDist;
+        const sp = clientToSvg(mid.x, mid.y);
+        zoomAt(sp.x, sp.y, factor);
+        // also pan by midpoint movement
+        if (pinchPrevMid) {
+          const rect = svg.getBoundingClientRect();
+          const scale = Math.min(rect.width / VB.w, rect.height / VB.h);
+          VB.x -= (mid.x - pinchPrevMid.x) / scale;
+          VB.y -= (mid.y - pinchPrevMid.y) / scale;
+          clampViewBox();
+          applyViewBox();
+        }
+      }
+      pinchPrevDist = dist;
+      pinchPrevMid = mid;
+    }
+  });
+
+  function endPointer(ev) {
+    if (!pointers.has(ev.pointerId)) return;
+    const wasMulti = pointers.size > 1;
+    pointers.delete(ev.pointerId);
+    if (pointers.size < 2) {
+      pinchPrevDist = 0;
+      pinchPrevMid = null;
+    }
+    if (pointers.size === 1) {
+      const remaining = pointersArr()[0];
+      lastPan = { x: remaining.x, y: remaining.y };
+    } else if (pointers.size === 0) {
+      svg.classList.remove("panning");
+      lastPan = null;
+    }
+
+    const elapsed = performance.now() - dragStartedAt;
+    // If the gesture was a drag/pinch, suppress the synthetic click that follows.
+    if (wasMulti || totalMove > 6 || elapsed > 350) {
+      suppressClickUntil = performance.now() + 400;
+    } else if (pointers.size === 0) {
+      // Detect double-tap
+      const now = performance.now();
+      const pos = { x: ev.clientX, y: ev.clientY };
+      if (lastTapPos && now - lastTapTime < 320 &&
+          Math.hypot(pos.x - lastTapPos.x, pos.y - lastTapPos.y) < 30) {
+        // double-tap: zoom in or reset
+        const sp = clientToSvg(pos.x, pos.y);
+        if (currentScale() > 1.5) {
+          resetZoom();
+        } else {
+          zoomAt(sp.x, sp.y, 2.5);
+        }
+        suppressClickUntil = performance.now() + 400;
+        lastTapTime = 0;
+        lastTapPos = null;
+      } else {
+        lastTapTime = now;
+        lastTapPos = pos;
+      }
+    }
+  }
+
+  viewport.addEventListener("pointerup", endPointer);
+  viewport.addEventListener("pointercancel", endPointer);
+  viewport.addEventListener("pointerleave", endPointer);
+
+  // Suppress click events that follow a drag/pinch
+  viewport.addEventListener("click", (ev) => {
+    if (performance.now() < suppressClickUntil) {
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+  }, true);
+
+  // Wheel zoom (desktop)
+  viewport.addEventListener("wheel", (ev) => {
+    ev.preventDefault();
+    const factor = Math.exp(-ev.deltaY * 0.0015);
+    const sp = clientToSvg(ev.clientX, ev.clientY);
+    zoomAt(sp.x, sp.y, factor);
+  }, { passive: false });
+
+  // Zoom buttons
+  viewport.querySelectorAll(".zoom-btn").forEach(btn => {
+    btn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const action = btn.dataset.zoom;
+      const rect = svg.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const sp = clientToSvg(cx, cy);
+      if (action === "in") zoomAt(sp.x, sp.y, 1.5);
+      else if (action === "out") zoomAt(sp.x, sp.y, 1 / 1.5);
+      else if (action === "reset") resetZoom();
+    });
+  });
+}
+
 // ---------- Init ----------
 function init() {
   renderMap();
   renderDoors();
   renderKeys();
+  setupMapInteractions();
+  applyViewBox();
 
   document.querySelectorAll(".view-btn").forEach(btn => {
     btn.addEventListener("click", () => setView(btn.dataset.view));
