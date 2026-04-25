@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1a1a" />
+  <title>Key Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Key Tracker</h1>
+    <div class="controls">
+      <div class="view-toggle" role="tablist" aria-label="View">
+        <button class="view-btn active" data-view="map" role="tab">Map</button>
+        <button class="view-btn" data-view="doors" role="tab">By Door</button>
+        <button class="view-btn" data-view="keys" role="tab">By Key</button>
+      </div>
+      <input
+        id="search"
+        type="search"
+        placeholder="Search key #, door, or box..."
+        autocomplete="off"
+      />
+    </div>
+  </header>
+
+  <main>
+    <section id="view-map" class="view active">
+      <div class="map-wrap">
+        <div class="compass" aria-hidden="true">
+          <span class="n">N</span>
+          <span class="arrow">↑</span>
+        </div>
+        <svg
+          id="map-svg"
+          viewBox="0 0 400 600"
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label="Building map"
+        ></svg>
+        <div class="legend" aria-hidden="true">
+          <span class="dot dot-full"></span> Both keys assigned
+          <span class="dot dot-partial"></span> Partial
+          <span class="dot dot-empty"></span> None
+        </div>
+      </div>
+    </section>
+
+    <section id="view-doors" class="view">
+      <div id="doors-list" class="card-grid"></div>
+    </section>
+
+    <section id="view-keys" class="view">
+      <div id="keys-list" class="card-grid"></div>
+      <div id="unassigned-wrap"></div>
+    </section>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
