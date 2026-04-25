@@ -18,15 +18,15 @@ const BOXES = [
 // Set a value to rename how a box appears on the map and in cards.
 // null => falls back to the box id (A, B, MAIN, etc.)
 const BOX_NAMES = {
-  A:    null,
-  B:    null,
-  C:    null,
-  D:    null,
-  X:    null,
-  E:    null,
+  A:    "Gia",
+  B:    "Dikshya",
+  C:    "Parlor",
+  D:    "Tailor",
+  X:    "Toilet",
+  E:    "Paan",
   MAIN: null,
   F:    null,
-  G:    null,
+  G:    "Chura",
 };
 
 // 12 doors. IDs use facing direction; for boxes with multiple doors on the
