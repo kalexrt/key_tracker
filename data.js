@@ -72,7 +72,7 @@ const KEY_ASSIGNMENTS = {
   "MAIN-E-b": 199,
   "F-E1-a": 602,
   "F-E1-b": 404,
-  "F-E2-a": null,
+  "F-E2-a": 561,
   "F-E2-b": "289,322",
   "F-S-a":  713,
   "F-S-b":  "727(1)",
